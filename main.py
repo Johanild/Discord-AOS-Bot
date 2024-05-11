@@ -351,7 +351,7 @@ import discord
 
 @bot.command(aliases=["bj"])
 async def blackjack(ctx, wager: int):
-    def end_game(outcome, temp_description):
+    async def end_game(outcome, temp_description):
         description = f"Dealers Cards: {''.join([emojis[card] for card in dealer_cards])} Total: {dealer_total}\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n{temp_description}"
         manage_statistics(user_id, "bj", outcome)
         if outcome == "win":
