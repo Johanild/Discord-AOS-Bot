@@ -5,8 +5,6 @@ import discord
 import json
 from discord.ext import commands
 
-#updated version 3
-
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='$', intents=intents)
@@ -130,7 +128,7 @@ async def on_ready():
 
 @bot.command()
 async def help(ctx, *args):
-    if len(args) == 0: 
+    if len(args) == 0:
         title = "Informations and commands"
         description = "This is prototype of AOS Casino bot developed by v0v0\n\n**List of commands:**\n​   Coinflip - Starts a game of coinflip\n​   Blackjack - Starts a game of blackjack\n​   Dice - Starts a game of dice\n​   Balance - Checks yours or someones balance\n​   Statistics - Displays your statistics\n​   Donate - Lets you donate your balance to someone\n​   Loadout - Generates random loadout\n​   Leaderboard - Shows token amount leaderboard\n\nIf you need help with any specific command, use: `$help (command)`"
     else:
@@ -401,11 +399,11 @@ async def blackjack(ctx, wager: int):
                 await message.edit(embed=embed)
             elif user_total == 21:
                 if user_total > dealer_total:
-                    end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has drew worse hand!")
+                    await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has drew worse hand!")
                 elif user_total < dealer_total:
-                    end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted!")
+                    await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted!")
                 elif dealer_total == 21:
-                    end_game("tie", "**Tie, the dealer has drawn cards of the same value.**")
+                    await end_game("tie", "**Tie, the dealer has drawn cards of the same value.**")
 
             elif user_total > 21:
                 if "CA" in user_cards and user_cards.count("CA") > user_aces_swapped:
@@ -414,14 +412,14 @@ async def blackjack(ctx, wager: int):
                     await message.edit(embed=embed)
                 else:
                     if user_total < dealer_total:
-                        end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted by more!**")
+                        await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted by more!**")
                     elif user_total > dealer_total:
                         if dealer_total <= 21:
-                            end_game("loss", "**You have lost by bust.**")
+                            await end_game("loss", "**You have lost by bust.**")
                         elif dealer_total > 21:
-                            end_game("loss", "**You have lost, the dealer has busted by less.**")
+                            await end_game("loss", "**You have lost, the dealer has busted by less.**")
                     elif user_total == dealer_total:
-                        end_game("tie", "**Tie, both you and the dealer have busted.**")
+                        await end_game("tie", "**Tie, both you and the dealer have busted.**")
                     await message.edit(view=None)
 
         elif selected_button == "stand":
@@ -436,14 +434,14 @@ async def blackjack(ctx, wager: int):
                     dealer_total += dealt_total
             if user_total < 21:
                 if user_total > dealer_total:
-                    end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has drew worse hand!**")
+                    await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has drew worse hand!**")
                 elif user_total < dealer_total:
                     if dealer_total > 21:
-                        end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted.**")
+                        await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted.**")
                     elif dealer_total <= 21:
-                        end_game("loss", "**You have lost, the dealer has drew better hand.**")
+                        await end_game("loss", "**You have lost, the dealer has drew better hand.**")
                 elif user_total == dealer_total:
-                    end_game("tie", "**Tie, the dealer has drawn cards of the same value.**")
+                    await end_game("tie", "**Tie, the dealer has drawn cards of the same value.**")
 
     user_id = str(ctx.author.id)
 
@@ -486,11 +484,11 @@ async def blackjack(ctx, wager: int):
 
     if dealer_total == 21 or user_total == 21:
         if user_total == 21 and dealer_total != 21:
-            end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}` by drawing blackjack!**")
+            await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}` by drawing blackjack!**")
         elif user_total != 21 and dealer_total == 21:
-            end_game("loss", "**You have lost, the dealer has drew blackjack.**")
+            await end_game("loss", "**You have lost, the dealer has drew blackjack.**")
         elif user_total == dealer_total:
-            end_game("tie", "**You have tied, both you and the dealer has drew blackjack.**")
+            await end_game("tie", "**You have tied, both you and the dealer has drew blackjack.**")
 
 
 @bot.command(aliases=["dc"])
