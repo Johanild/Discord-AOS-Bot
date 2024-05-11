@@ -5,7 +5,7 @@ import discord
 import json
 from discord.ext import commands
 
-#updated version 2
+#updated version 3
 
 intents = discord.Intents.default()
 intents.message_content = True
