@@ -361,7 +361,8 @@ async def blackjack(ctx, wager: int):
         else:
             color = discord.Color.blurple()
         embed.description = description
-        await message.edit(embed=embed, color=color, view=None)
+        embed.color = color
+        await message.edit(embed=embed, view=None)
 
     def deal_cards(amount):
         template_cards = [("C2", 2), ("C3", 3), ("C4", 4), ("C5", 5), ("C6", 6), ("C7", 7), ("C8", 8), ("C9", 9),
