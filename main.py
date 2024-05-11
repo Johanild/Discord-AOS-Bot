@@ -346,10 +346,28 @@ async def leaderboard(ctx, cap=10):
     await ctx.send(embed=embed)
 
 
+import discord
+
+
 @bot.command(aliases=["bj"])
 async def blackjack(ctx, wager: int):
+    def end_game(outcome, temp_description):
+        description = f"Dealers Cards: {''.join([emojis[card] for card in dealer_cards])} Total: {dealer_total}\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n{temp_description}"
+        manage_statistics(user_id, "bj", outcome)
+        if outcome == "win":
+            update_balance(user_id, "add", wager * blackjack_multiplier)
+            color = discord.Color.blurple()
+        elif outcome == "loss":
+            update_balance(user_id, "remove", wager)
+            color = discord.Color.red()
+        else:
+            color = discord.Color.blurple()
+        embed.description = description
+        await message.edit(embed=embed, color=color, view=None)
+
     def deal_cards(amount):
-        template_cards = [("C2", 2), ("C3", 3), ("C4", 4), ("C5", 5), ("C6", 6), ("C7", 7), ("C8", 8), ("C9", 9),("C10", 10), ("CJ", 10), ("CQ", 10), ("CK", 10), ("CA", 11)]
+        template_cards = [("C2", 2), ("C3", 3), ("C4", 4), ("C5", 5), ("C6", 6), ("C7", 7), ("C8", 8), ("C9", 9),
+                          ("C10", 10), ("CJ", 10), ("CQ", 10), ("CK", 10), ("CA", 11)]
         all_cards = []
         for card_tuple in template_cards:
             for _ in range(4):
@@ -365,61 +383,48 @@ async def blackjack(ctx, wager: int):
         return chosen_cards, value_cards
 
     async def button_callback(interaction: discord.Interaction):
-        nonlocal button_clicked, user_total, message, embed, dealer_total, user_total
-
+        nonlocal user_total, message, embed, dealer_total, user_total
         await interaction.response.defer()
 
         if str(interaction.user.id) != user_id:
             return
-        button_clicked = True
-        selected_button = interaction.data["custom_id"]
 
+        selected_button = interaction.data["custom_id"]
         user_aces_swapped = 0
-        
+
         if selected_button == "hit":
             dealt_card, dealt_total = deal_cards(1)
             user_cards.append(dealt_card[0])
             user_total += dealt_total
-            embed_description = f"Dealers Cards: {emojis['CR']}{''.join([emojis[card] for card in dealer_cards[1:]])} Total: ?\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n"
             if user_total < 21:
-                pass
+                embed.description = f"Dealers Cards: {emojis['CR']}{''.join([emojis[card] for card in dealer_cards[1:]])} Total: ?\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n"
+                await message.edit(embed=embed)
             elif user_total == 21:
-                embed_description = f"Dealers Cards: {''.join([emojis[card] for card in dealer_cards])} Total: {dealer_total}\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n"
-                if user_total != dealer_total:
-                    embed_description += f"**You have won `{int(wager * blackjack_multiplier)}`, you have drawn blackjack!**"
-                    update_balance(user_id, "add", wager * blackjack_multiplier)
-                    manage_statistics(user_id, "bj", "win")
-                else:
-                    embed_description += "**You have tied, both you and the dealer has drew blackjack.**"
-                    manage_statistics(user_id, "bj", "tie")
-                await message.edit(view=None)
+                if user_total > dealer_total:
+                    end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has drew worse hand!")
+                elif user_total < dealer_total:
+                    end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted!")
+                elif dealer_total == 21:
+                    end_game("tie", "**Tie, the dealer has drawn cards of the same value.**")
+
             elif user_total > 21:
                 if "CA" in user_cards and user_cards.count("CA") > user_aces_swapped:
                     user_total -= 10
                     user_aces_swapped += 1
-                    embed_description = f"Dealers Cards: {emojis['CR']}{''.join([emojis[card] for card in dealer_cards[1:]])} Total: ?\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n"
                     await message.edit(embed=embed)
                 else:
-                    embed_description = f"Dealers Cards: {''.join([emojis[card] for card in dealer_cards])} Total: {dealer_total}\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n"
                     if user_total < dealer_total:
-                        embed_description += f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted by more!**"
-                        update_balance(user_id, "add", wager * blackjack_multiplier)
-                        manage_statistics(user_id, "bj", "win")
+                        end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted by more!**")
                     elif user_total > dealer_total:
                         if dealer_total <= 21:
-                            embed_description += "**You have lost by bust.**"
+                            end_game("loss", "**You have lost by bust.**")
                         elif dealer_total > 21:
-                            embed_description += "**You have lost, the dealer has busted by less.**"
-                        update_balance(user_id, "remove", wager)
-                        manage_statistics(user_id, "bj", "loss")
+                            end_game("loss", "**You have lost, the dealer has busted by less.**")
                     elif user_total == dealer_total:
-                        embed_description += "**You have tied, both you and dealer has busted.**"
-                        manage_statistics(user_id, "bj", "tie")
+                        end_game("tie", "**Tie, both you and the dealer have busted.**")
                     await message.edit(view=None)
 
         elif selected_button == "stand":
-            embed_description = f"Dealers Cards: {''.join([emojis[card] for card in dealer_cards])} Total: {dealer_total}\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n"
-            dealer_aces_swapped = 0
             while dealer_total < 17:
                 dealt_card, dealt_total = deal_cards(1)
                 dealer_cards.append(dealt_card[0])
@@ -429,58 +434,17 @@ async def blackjack(ctx, wager: int):
                     dealer_aces_swapped += 1
                 else:
                     dealer_total += dealt_total
-                embed_description = f"Dealers Cards: {''.join([emojis[card] for card in dealer_cards])} Total: {dealer_total}\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n"
-                embed.description = embed_description
-                await message.edit(embed=embed)
             if user_total < 21:
                 if user_total > dealer_total:
-                    embed_description += f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has drew worse hand!**"
-                    update_balance(user_id, "add", wager * blackjack_multiplier)
-                    manage_statistics(user_id, "bj", "win")
+                    end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has drew worse hand!**")
                 elif user_total < dealer_total:
                     if dealer_total > 21:
-                        embed_description += f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted.**"
-                        update_balance(user_id, "add", wager * blackjack_multiplier)
-                        manage_statistics(user_id, "bj", "win")
-                    elif dealer_total < 21:
-                        embed_description += "**You have lost, the dealer has drew better hand.**"
-                        update_balance(user_id, "remove", wager)
-                        manage_statistics(user_id, "bj", "loss")
-                    elif dealer_total == 21:
-                        embed_description += "**You have lost, the dealer has drew blackjack.**"
-                        update_balance(user_id, "remove", wager)
-                        manage_statistics(user_id, "bj", "loss")
+                        end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted.**")
+                    elif dealer_total <= 21:
+                        end_game("loss", "**You have lost, the dealer has drew better hand.**")
                 elif user_total == dealer_total:
-                    embed_description += "**You have tied, the dealer has drew same value hand.**"
-                    manage_statistics(user_id, "bj", "tie")
-            elif user_total > 21:
-                if "CA" in user_cards:
-                    user_total -= 10
-                if user_total < dealer_total:
-                    embed_description += f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted by more!**"
-                    update_balance(user_id, "add", wager * blackjack_multiplier)
-                    manage_statistics(user_id, "bj", "win")
-                elif user_total > dealer_total:
-                    embed_description += "**You have lost, the dealer has busted by less.**"
-                    update_balance(user_id, "remove", wager)
-                    manage_statistics(user_id, "bj", "loss")
-                elif user_total == dealer_total:
-                    embed_description += "**You have tied, both you and dealer have busted.**"
-                    manage_statistics(user_id, "bj", "tie")
-            elif user_total == 21:
-                if user_total != dealer_total:
-                    embed_description += f"**You have won `{int(wager * blackjack_multiplier)}` by drawing blackjack!**"
-                    update_balance(user_id, "add", wager * blackjack_multiplier)
-                    manage_statistics(user_id, "bj", "win")
-                else:
-                    embed_description += "**You have tied, both you and the dealer has drew blackjack.**"
-                    manage_statistics(user_id, "bj", "tie")
-            await message.edit(view=None)
+                    end_game("tie", "**Tie, the dealer has drawn cards of the same value.**")
 
-        embed.description = embed_description
-        await message.edit(embed=embed)
-
-    button_clicked = False
     user_id = str(ctx.author.id)
 
     if wager is None:
@@ -494,10 +458,8 @@ async def blackjack(ctx, wager: int):
         await ctx.reply(f"Insufficient balance, your current balance: `{balance}`", mention_author=True)
         return
 
-    used_cards = []
     dealer_cards, dealer_total = deal_cards(2)
     user_cards, user_total = deal_cards(2)
-    used_cards = dealer_cards + user_cards
     if dealer_cards == ["CA", "CA"]:
         dealer_total = 12
     if user_cards == ["CA", "CA"]:
@@ -512,54 +474,23 @@ async def blackjack(ctx, wager: int):
     view.add_item(button1)
     view.add_item(button2)
 
+    dealer_aces_swapped = 0
     if dealer_total == 22:
         dealer_total = 12
-    if dealer_total == 21 or user_total == 21:
-        description = f"Dealers Cards: {''.join([emojis[card] for card in dealer_cards])} Total: {dealer_total}\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n"
-        embed = discord.Embed(title=f"{ctx.author.global_name}'s Blackjack session", description=description, color=discord.Color.blurple())
-        if user_total == 21 and dealer_total != 21:
-            embed.description = description + f"**You have won `{int(wager * blackjack_multiplier)}` by drawing blackjack!**"
-            update_balance(user_id, "add", wager * blackjack_multiplier)
-            manage_statistics(user_id, "bj", "win")
-        elif user_total != 21 and dealer_total == 21:
-            embed.description = description + "**You have lost, the dealer has drew blackjack.**"
-            update_balance(user_id, "remove", wager)
-            manage_statistics(user_id, "bj", "loss")
-        elif user_total == dealer_total:
-            embed.description = description + "**You have tied, both you and the dealer has drew blackjack.**"
-            manage_statistics(user_id, "bj", "tie")
-        message = await ctx.send(embed=embed, view=None)
-        return
+        dealer_aces_swapped += 1
 
-    embed = discord.Embed(title=f"{ctx.author.global_name}'s Blackjack session", description=f"Dealers Cards: {emojis['CR']}{emojis[dealer_cards[1]]} Total: ?\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}", color=discord.Color.blurple())
+    embed = discord.Embed(title=f"{ctx.author.global_name}'s Blackjack session",
+                          description=f"Dealers Cards: {emojis['CR']}{emojis[dealer_cards[1]]} Total: ?\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}",
+                          color=discord.Color.blurple())
     message = await ctx.send(embed=embed, view=view)
 
-
-@bot.command(aliases=["stats", "stat", "st"])
-async def statistics(ctx):
-    user_id = ctx.author.id
-    with open("users.json", "r") as file:
-        data = json.load(file)
-    
-    if str(user_id) not in data:
-        create_user(user_id)
-    cf_wins = data[str(user_id)]["Statistics"]["cf_win"]
-    cf_loses = data[str(user_id)]["Statistics"]["cf_loss"]
-    cf_total = cf_wins + cf_loses
-    try:
-        cf_winrate = round(cf_wins / cf_total * 100, 2)
-    except ZeroDivisionError:
-        cf_winrate = 0
-    bj_wins = data[str(user_id)]["Statistics"]["bj_win"]
-    bj_loses = data[str(user_id)]["Statistics"]["bj_loss"]
-    bj_ties = data[str(user_id)]["Statistics"]["bj_tie"]
-    bj_total = bj_wins + bj_loses + bj_ties
-    try:
-        bj_winrate = round(bj_wins / (bj_wins + bj_loses) * 100, 2)
-    except ZeroDivisionError:
-        bj_winrate = 0
-    embed = discord.Embed(title=f"{ctx.author.global_name}'s Statistics", description=f"**Coinflip:**\n​   Wins: {cf_wins}\n​   Losses: {cf_loses}\n​   Winrate: {cf_winrate}%\n**Blackjack:**\n​   Wins: {bj_wins}\n​   Losses: {bj_loses}\n​   Ties: {bj_ties}\n​   Winrate: {bj_winrate}%", color=discord.Color.blurple())
-    await ctx.send(embed=embed)
+    if dealer_total == 21 or user_total == 21:
+        if user_total == 21 and dealer_total != 21:
+            end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}` by drawing blackjack!**")
+        elif user_total != 21 and dealer_total == 21:
+            end_game("loss", "**You have lost, the dealer has drew blackjack.**")
+        elif user_total == dealer_total:
+            end_game("tie", "**You have tied, both you and the dealer has drew blackjack.**")
 
 
 @bot.command(aliases=["dc"])
