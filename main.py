@@ -424,6 +424,7 @@ async def blackjack(ctx, wager: int):
                         await end_game("tie", "**Tie, both you and the dealer have busted.**")
 
         elif selected_button == "stand":
+            nonlocal dealer_aces_swapped
             while dealer_total < 17:
                 dealt_card, dealt_total = deal_cards(1)
                 dealer_cards.append(dealt_card[0])
