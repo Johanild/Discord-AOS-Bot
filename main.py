@@ -488,6 +488,33 @@ async def blackjack(ctx, wager: int):
             await end_game("tie", "**Tie, both you and the dealer have drawn blackjack.**")
 
 
+@bot.command(aliases=["stats", "stat", "st"])
+async def statistics(ctx):
+    user_id = ctx.author.id
+    with open("users.json", "r") as file:
+        data = json.load(file)
+    
+    if str(user_id) not in data:
+        create_user(user_id)
+    cf_wins = data[str(user_id)]["Statistics"]["cf_win"]
+    cf_loses = data[str(user_id)]["Statistics"]["cf_loss"]
+    cf_total = cf_wins + cf_loses
+    try:
+        cf_winrate = round(cf_wins / cf_total * 100, 2)
+    except ZeroDivisionError:
+        cf_winrate = 0
+    bj_wins = data[str(user_id)]["Statistics"]["bj_win"]
+    bj_loses = data[str(user_id)]["Statistics"]["bj_loss"]
+    bj_ties = data[str(user_id)]["Statistics"]["bj_tie"]
+    bj_total = bj_wins + bj_loses + bj_ties
+    try:
+        bj_winrate = round(bj_wins / (bj_wins + bj_loses) * 100, 2)
+    except ZeroDivisionError:
+        bj_winrate = 0
+    embed = discord.Embed(title=f"{ctx.author.global_name}'s Statistics", description=f"**Coinflip:**\n​   Wins: {cf_wins}\n​   Losses: {cf_loses}\n​   Winrate: {cf_winrate}%\n**Blackjack:**\n​   Wins: {bj_wins}\n​   Losses: {bj_loses}\n​   Ties: {bj_ties}\n​   Winrate: {bj_winrate}%", color=discord.Color.blurple())
+    await ctx.send(embed=embed)
+
+
 @bot.command(aliases=["dc"])
 async def dice(ctx, number: int, wager: int):
     user_id = ctx.author.id
