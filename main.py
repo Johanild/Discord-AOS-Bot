@@ -70,7 +70,8 @@ def update_balance(user_id, mode, amount):
 
     if str(user_id) not in data.keys():
         create_user(user_id)
-        data = json.load(file)
+        with open("users.json", "r") as file:
+            data = json.load(file)
     if mode == "add":
         data[str(user_id)]["Balance"] += int(amount)
     elif mode == "remove":
