@@ -395,8 +395,9 @@ async def blackjack(ctx, wager: int):
             dealt_card, dealt_total = deal_cards(1)
             user_cards.append(dealt_card[0])
             user_total += dealt_total
+            embed_description = f"Dealers Cards: {emojis['CR']}{''.join([emojis[card] for card in dealer_cards[1:]])} Total: ?\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n"
             if user_total < 21:
-                embed.description = f"Dealers Cards: {emojis['CR']}{''.join([emojis[card] for card in dealer_cards[1:]])} Total: ?\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}\n\n"
+                embed.description = embed_description
                 await message.edit(embed=embed)
             elif user_total == 21:
                 if user_total > dealer_total:
@@ -405,11 +406,11 @@ async def blackjack(ctx, wager: int):
                     await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted!")
                 elif dealer_total == 21:
                     await end_game("tie", "**Tie, the dealer has drawn cards of the same value.**")
-
             elif user_total > 21:
                 if "CA" in user_cards and user_cards.count("CA") > user_aces_swapped:
                     user_total -= 10
                     user_aces_swapped += 1
+                    embed.description = embed_description
                     await message.edit(embed=embed)
                 else:
                     if user_total < dealer_total:
@@ -421,7 +422,6 @@ async def blackjack(ctx, wager: int):
                             await end_game("loss", "**You have lost, the dealer has busted by less.**")
                     elif user_total == dealer_total:
                         await end_game("tie", "**Tie, both you and the dealer have busted.**")
-                    await message.edit(view=None)
 
         elif selected_button == "stand":
             while dealer_total < 17:
