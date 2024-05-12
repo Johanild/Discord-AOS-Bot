@@ -365,31 +365,24 @@ async def blackjack(ctx, wager: int):
         await message.edit(embed=embed, view=None)
 
     def deal_cards(amount):
-        template_cards = [("C2", 2), ("C3", 3), ("C4", 4), ("C5", 5), ("C6", 6), ("C7", 7), ("C8", 8), ("C9", 9),
-                          ("C10", 10), ("CJ", 10), ("CQ", 10), ("CK", 10), ("CA", 11)]
-        all_cards = []
-        for card_tuple in template_cards:
-            for _ in range(4):
-                all_cards.append(card_tuple)
+        nonlocal all_cards
         chosen_cards = []
         value_cards = 0
         for _ in range(amount):
-            chosen_card = random.choice(all_cards)
-            chosen_card_instance = chosen_card[0]
-            all_cards.remove(chosen_card)
-            chosen_cards.append(chosen_card_instance)
+            chosen_card = all_cards.pop(random.randint(0, len(all_cards)-1))
+            chosen_card_symbol = chosen_card[0]
+            chosen_cards.append(chosen_card_symbol)
             value_cards += chosen_card[1]
         return chosen_cards, value_cards
 
     async def button_callback(interaction: discord.Interaction):
-        nonlocal user_total, message, embed, dealer_total, user_total
+        nonlocal user_total, message, embed, dealer_total, user_total, user_aces_swapped, dealer_aces_swapped
         await interaction.response.defer()
 
         if str(interaction.user.id) != user_id:
             return
 
         selected_button = interaction.data["custom_id"]
-        user_aces_swapped = 0
 
         if selected_button == "hit":
             dealt_card, dealt_total = deal_cards(1)
@@ -423,11 +416,10 @@ async def blackjack(ctx, wager: int):
                         await end_game("tie", "**Tie, both you and the dealer have busted.**")
 
         elif selected_button == "stand":
-            nonlocal dealer_aces_swapped
             while dealer_total < 17:
                 dealt_card, dealt_total = deal_cards(1)
                 dealer_cards.append(dealt_card[0])
-                if "CA" in dealer_cards and dealer_total + dealt_total > 21 and dealer_cards.count("CA") > dealer_aces_swapped:
+                if dealer_total + dealt_total > 21 and "CA" in dealer_cards and dealer_cards.count("CA") > dealer_aces_swapped:
                     dealer_total_temp = dealer_total + dealt_total
                     dealer_total = dealer_total_temp - 10
                     dealer_aces_swapped += 1
@@ -445,6 +437,10 @@ async def blackjack(ctx, wager: int):
                     await end_game("tie", "**Tie, the dealer has drawn cards of the same value.**")
 
     user_id = str(ctx.author.id)
+    all_cards = [("C2", 2), ("C3", 3), ("C4", 4), ("C5", 5), ("C6", 6), ("C7", 7), ("C8", 8), ("C9", 9), ("C10", 10), ("CJ", 10), ("CQ", 10), ("CK", 10), ("CA", 11), 
+                 ("C2", 2), ("C3", 3), ("C4", 4), ("C5", 5), ("C6", 6), ("C7", 7), ("C8", 8), ("C9", 9), ("C10", 10), ("CJ", 10), ("CQ", 10), ("CK", 10), ("CA", 11), 
+                 ("C2", 2), ("C3", 3), ("C4", 4), ("C5", 5), ("C6", 6), ("C7", 7), ("C8", 8), ("C9", 9), ("C10", 10), ("CJ", 10), ("CQ", 10), ("CK", 10), ("CA", 11), 
+                 ("C2", 2), ("C3", 3), ("C4", 4), ("C5", 5), ("C6", 6), ("C7", 7), ("C8", 8), ("C9", 9), ("C10", 10), ("CJ", 10), ("CQ", 10), ("CK", 10), ("CA", 11)]
 
     if wager is None:
         await ctx.reply("Incorrect syntax, please specify wager amount. Example: $coinflip 100", mention_author=True)
@@ -459,10 +455,8 @@ async def blackjack(ctx, wager: int):
 
     dealer_cards, dealer_total = deal_cards(2)
     user_cards, user_total = deal_cards(2)
-    if dealer_cards == ["CA", "CA"]:
-        dealer_total = 12
-    if user_cards == ["CA", "CA"]:
-        user_total = 12
+    dealer_aces_swapped = 0
+    user_aces_swapped = 0
 
     view = discord.ui.View()
     button1 = discord.ui.Button(label="Hit", custom_id="hit", style=discord.ButtonStyle.primary)
@@ -473,10 +467,12 @@ async def blackjack(ctx, wager: int):
     view.add_item(button1)
     view.add_item(button2)
 
-    dealer_aces_swapped = 0
     if dealer_total == 22:
         dealer_total = 12
         dealer_aces_swapped += 1
+    if user_total == 22:
+        user_total = 12
+        user_aces_swapped +=1
 
     embed = discord.Embed(title=f"{ctx.author.global_name}'s Blackjack session",
                           description=f"Dealers Cards: {emojis['CR']}{emojis[dealer_cards[1]]} Total: ?\n\nYour Cards: \u200B \u200B \u200B \u200B \u200B \u200B \u200B{''.join([emojis[card] for card in user_cards])} Total: {user_total}",
@@ -487,9 +483,9 @@ async def blackjack(ctx, wager: int):
         if user_total == 21 and dealer_total != 21:
             await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}` by drawing blackjack!**")
         elif user_total != 21 and dealer_total == 21:
-            await end_game("loss", "**You have lost, the dealer has drew blackjack.**")
+            await end_game("loss", "**You have lost, the dealer has drawn blackjack.**")
         elif user_total == dealer_total:
-            await end_game("tie", "**You have tied, both you and the dealer has drew blackjack.**")
+            await end_game("tie", "**Tie, both you and the dealer have drawn blackjack.**")
 
 
 @bot.command(aliases=["dc"])
