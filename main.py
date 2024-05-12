@@ -34,7 +34,7 @@ def replace_emotes(guild, text):
 def create_user(user_id):
     with open('users.json', 'r') as file:
         data = json.load(file)
-    data[f"{user_id}"] = {
+    data[str(user_id)] = {
         "Inventory": {},
         "Balance": 0,
         "Flags": {
@@ -68,8 +68,9 @@ def update_balance(user_id, mode, amount):
     with open("users.json", "r") as file:
         data = json.load(file)
 
-    if str(user_id) not in data:
+    if str(user_id) not in data.keys():
         create_user(user_id)
+        data = json.load(file)
     if mode == "add":
         data[str(user_id)]["Balance"] += int(amount)
     elif mode == "remove":
