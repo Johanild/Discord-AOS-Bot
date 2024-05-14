@@ -381,9 +381,9 @@ async def blackjack(ctx, wager: int):
                 await message.edit(embed=embed)
             elif user_total == 21:
                 if user_total > dealer_total:
-                    await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has drew worse hand!")
+                    await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has drew worse hand!**")
                 elif user_total < dealer_total:
-                    await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted!")
+                    await end_game("win", f"**You have won `{int(wager * blackjack_multiplier)}`, the dealer has busted!**")
                 elif dealer_total == 21:
                     await end_game("tie", "**Tie, the dealer has drawn cards of the same value.**")
             elif user_total > 21:
