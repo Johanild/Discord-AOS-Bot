@@ -143,22 +143,25 @@ async def help(ctx, *args):
             description = f"This command generates random AOS loadout, optional arguments:\n`number` - Lets you generate specific amount of loadouts (Up to 10)"
         else:
             title = "Error"
-            description = "Invalid command, use $help for list of all commands."
+            description = f"Either {args[0]} isn't a real command or it deosnt have its own help subcommand.\nUse `$help` for list of all commands."
     embed = discord.Embed(title=title, description=description, color=discord.Color.blurple())
     await ctx.reply(embed=embed, mention_author=True)
 
 
 @bot.command(aliases=["cf"])
-async def coinflip(ctx, wager):
-    wager = int(wager)
+async def coinflip(ctx, wager: int):
     user_id = str(ctx.author.id)
     button_clicked = False
+    balance = get_balance(user_id)
 
     if wager is None:
-        await ctx.reply("Incorrect syntax, please specify wager amount. Example: $coinflip 100", mention_author=False)
+        await ctx.reply("Incorrect syntax, please specify wager amount. Example: $coinflip 100", mention_author=True)
         return
     elif wager < 100 or wager > 50000:
-        await ctx.reply("Wager amount must be between 100 and 50000", mention_author=False)
+        await ctx.reply("Wager amount must be between 100 and 50000", mention_author=True)
+        return
+    elif balance < wager:
+        await ctx.reply(f"Insufficient balance, your current balance: `{balance}`", mention_author=True)
         return
 
     async def button_callback(interaction: discord.Interaction):
@@ -169,34 +172,26 @@ async def coinflip(ctx, wager):
 
         button_clicked = True
         selected_button = interaction.data["custom_id"]
-        balance = get_balance(user_id)
 
-        if balance >= wager:
-            if selected_button == "cancel":
-                embed = discord.Embed(title="Coinflip canceled", description="You have canceled your coinflip",
-                                      color=discord.Color.red())
-                await interaction.response.send_message(embed=embed)
-                button_clicked = True
-                return
-
-            outcomeface = random.choice(["heads", "tails"])
-            if selected_button == outcomeface:
-                outcome, amount, selected_color = "won", wager * coinflip_multiplier, discord.Color.blurple()
-                update_balance(user_id, "add", amount)
-                manage_statistics(user_id, "cf", "win")
-            else:
-                outcome, amount, selected_color = "lost", wager, discord.Color.red()
-                update_balance(user_id, "remove", wager)
-                manage_statistics(user_id, "cf", "loss")
-
-            embed = discord.Embed(title=f"You {outcome} {amount} tokens!",
-                                  description=f"The coin has landed on {outcomeface}\nYour balance is now {get_balance(user_id)} tokens",
-                                  color=selected_color)
-            embed.set_image(
-                url="https://cdn.discordapp.com/attachments/1117592667979776050/1122553419991891969/head.png" if outcomeface == "heads" else "https://cdn.discordapp.com/attachments/1117592667979776050/1122553433350746254/tail.png")
+        if selected_button == "cancel":
+            embed = discord.Embed(title="Coinflip canceled", description="You have canceled your coinflip.", color=discord.Color.red())
             await interaction.response.send_message(embed=embed)
+            button_clicked = True
+            return
+
+        outcomeface = random.choice(["heads", "tails"])
+        if selected_button == outcomeface:
+            outcome, amount, selected_color = "won", wager * coinflip_multiplier, discord.Color.blurple()
+            update_balance(user_id, "add", amount)
+            manage_statistics(user_id, "cf", "win")
         else:
-            await interaction.response.send_message("Insufficient balance.")
+            outcome, amount, selected_color = "lost", wager, discord.Color.red()
+            update_balance(user_id, "remove", wager)
+            manage_statistics(user_id, "cf", "loss")
+
+        embed = discord.Embed(title=f"You {outcome} {amount} tokens!", description=f"The coin has landed on {outcomeface}\nYour balance is now {get_balance(user_id)} tokens", color=selected_color)
+        embed.set_image(url="https://cdn.discordapp.com/attachments/1117592667979776050/1122553419991891969/head.png" if outcomeface == "heads" else "https://cdn.discordapp.com/attachments/1117592667979776050/1122553433350746254/tail.png")
+        await interaction.response.send_message(embed=embed)
 
     view = discord.ui.View()
     button1 = discord.ui.Button(label="Heads", custom_id="heads", style=discord.ButtonStyle.danger, emoji=emojis["head"])
@@ -267,17 +262,13 @@ async def donate(ctx, reciever, amount):
         button_id = interaction.data['custom_id']
 
         if button_id == "cancel":
-            embed = discord.Embed(title="Donation cancelled",
-                                  description=f"Donation of `{amount}` to `{reciever_name}` has been cancelled.",
-                                  color=discord.Color.red())
+            embed = discord.Embed(title="Donation cancelled", description=f"Donation of `{amount}` to `{reciever_name}` has been cancelled.", color=discord.Color.red())
             await interaction.response.send_message(embed=embed)
 
         elif button_id == "confirm":
             update_balance(sender_id, "remove", amount)
             update_balance(reciever_id, "add", amount)
-            embed = discord.Embed(title="Succesfully donated",
-                                  description=f"You have succesfully donated `{amount}` tokens to `{reciever_name}`!",
-                                  color=discord.Color.blurple())
+            embed = discord.Embed(title="Succesfully donated", description=f"You have succesfully donated `{amount}` tokens to `{reciever_name}`!", color=discord.Color.blurple())
             await interaction.response.send_message(embed=embed)
 
         else:
@@ -293,9 +284,7 @@ async def donate(ctx, reciever, amount):
         view.add_item(button1)
         view.add_item(button2)
 
-        embed = discord.Embed(title="Donation confirmation",
-                              description=f"Are you sure you want to donate `{amount}` tokens to `{reciever_name}`?\nYour balance after that will be `{balance - int(amount)}`.",
-                              color=discord.Color.blurple())
+        embed = discord.Embed(title="Donation confirmation", description=f"Are you sure you want to donate `{amount}` tokens to `{reciever_name}`?\nYour balance after that will be `{balance - int(amount)}`.", color=discord.Color.blurple())
         await ctx.send(embed=embed, view=view)
 
 
@@ -318,7 +307,7 @@ async def loadout(ctx, amount = None):
 
 
 @bot.command(aliases=["lb"])
-async def leaderboard(ctx, cap=10):
+async def leaderboard(ctx, cap=10: int):
     with open("users.json", "r") as file:
         data = json.load(file)
     if int(cap) > 20:
@@ -339,9 +328,6 @@ async def leaderboard(ctx, cap=10):
 
     embed = discord.Embed(title="Balance Leaderboard", description=message, color=discord.Color.blurple())
     await ctx.send(embed=embed)
-
-
-import discord
 
 
 @bot.command(aliases=["bj"])
