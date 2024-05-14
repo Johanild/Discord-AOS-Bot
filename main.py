@@ -135,7 +135,7 @@ async def help(ctx, *args):
         elif args[0] == "dice" or args[0] == "dc":
             title = "Informations about $dice command"
             description = f"**Dice is a minigame in which you predict which number a D6 dice will land on. If you guess correctly you will be awarded with tokens.**\nCommand syntax: `$dice [number] [wager]`\nWin probability: `16.7%`\nWin multiplier: `{dice_multiplier}`x wager\nWager restrictions: `100` - `50k` tokens"
-        elif args[0] == "balance" or "bal":
+        elif args[0] == "balance" or args[0] == "bal":
             title = "Informations about $balance command"
             description = f"This command lets you see yours or someone elses balance, optional arguments: \n`@mention` - Lets you see mentioned users balance\n`user ID` - Lets you see balance of user with given Discord ID"
         elif args[0] == "loadout":
