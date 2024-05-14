@@ -1,8 +1,9 @@
 import os
-import re
+import asyncio
 import random
 import discord
 import json
+import requests
 from discord.ext import commands
 
 intents = discord.Intents.default()
@@ -111,14 +112,28 @@ def generate_loadout():
     return loadout
 
 
+async def custom_activity():
+    while True:
+        data = requests.get("https://www.roblox.com/users/profile/playergames-json?userId=36407767").json()["Games"]
+        player_count = 0
+        for game in data:
+            if game["Name"] == "ArmsOfSolitaire BETA":
+                player_count = game["PlayerCount"]
+        await bot.change_presence(status=discord.Status.online, activity=discord.CustomActivity(name=f"{player_count} players currently in AOS"))
+        await asyncio.sleep(60)
+
+
 @bot.event
 async def on_ready():
     print("Bot ready")
+    await asyncio.sleep(1)
+    bot.loop.create_task(custom_activity())
+
 
 @bot.event
 async def on_command(ctx):
     print(f"Command ${ctx.command} used by {ctx.author.name}")
-    
+
 
 @bot.command()
 async def help(ctx, *args):
@@ -307,7 +322,7 @@ async def loadout(ctx, amount = None):
 
 
 @bot.command(aliases=["lb"])
-async def leaderboard(ctx, cap=10: int):
+async def leaderboard(ctx, cap: int = 10):
     with open("users.json", "r") as file:
         data = json.load(file)
     if int(cap) > 20:
@@ -476,7 +491,7 @@ async def statistics(ctx):
     user_id = ctx.author.id
     with open("users.json", "r") as file:
         data = json.load(file)
-    
+
     if str(user_id) not in data:
         create_user(user_id)
     cf_wins = data[str(user_id)]["Statistics"]["cf_win"]
