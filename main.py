@@ -115,6 +115,10 @@ def generate_loadout():
 async def on_ready():
     print("Bot ready")
 
+@bot.event
+async def on_command():
+    print(f"Command ${ctx.command} used by {ctx.user.name}")
+    
 
 @bot.command()
 async def help(ctx, *args):
