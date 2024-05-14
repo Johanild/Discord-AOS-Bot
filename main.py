@@ -17,20 +17,6 @@ with open("emojis.json", "r") as emoji_data:
     emojis = json.load(emoji_data)
 
 
-def replace_emotes(guild, text):
-    def replace(match):
-        emoji_name = match.group(1)
-        custom_emoji = discord.utils.get(guild.emojis, name=emoji_name)
-
-        if custom_emoji:
-            return f'<:{emoji_name}:{custom_emoji.id}>'
-        else:
-            return match.group(0)
-
-    pattern = re.compile(r':([a-zA-Z0-9_]+):')
-    return pattern.sub(replace, text)
-
-
 def create_user(user_id):
     with open('users.json', 'r') as file:
         data = json.load(file)
