@@ -33,7 +33,9 @@ def create_user(user_id):
             "bj_loss": 0,
             "bj_tie": 0,
             "cf_win": 0,
-            "cf_loss": 0
+            "cf_loss": 0,
+            "dc_loss": 0,
+            "dc_win": 0
         }
     }
     with open("users.json", "w") as file:
