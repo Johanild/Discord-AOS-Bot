@@ -141,6 +141,9 @@ async def help(ctx, *args):
         elif args[0] == "loadout":
             title = "Informations about $loadout command"
             description = f"This command generates random AOS loadout, optional arguments:\n`number` - Lets you generate specific amount of loadouts (Up to 10)"
+        else:
+            title = "Error"
+            description = "Invalid command, use $help for list of all commands."
     embed = discord.Embed(title=title, description=description, color=discord.Color.blurple())
     await ctx.reply(embed=embed, mention_author=True)
 
