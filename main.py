@@ -116,7 +116,7 @@ async def on_ready():
     print("Bot ready")
 
 @bot.event
-async def on_command():
+async def on_command(ctx):
     print(f"Command ${ctx.command} used by {ctx.user.name}")
     
 
