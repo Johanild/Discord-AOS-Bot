@@ -13,6 +13,7 @@ bot.remove_command('help')
 blackjack_multiplier = 1
 coinflip_multiplier = 0.95
 dice_multiplier = 5.5
+activity_running = False
 
 with open("emojis.json", "r") as emoji_data:
     emojis = json.load(emoji_data)
@@ -120,14 +121,18 @@ async def custom_activity():
             if game["Name"] == "ArmsOfSolitaire BETA":
                 player_count = game["PlayerCount"]
         await bot.change_presence(status=discord.Status.online, activity=discord.CustomActivity(name=f"{player_count} players currently in AOS"))
-        await asyncio.sleep(60)
+        await asyncio.sleep(180)
 
 
 @bot.event
 async def on_ready():
+    global activity_running
     print("Bot ready")
     await asyncio.sleep(1)
-    bot.loop.create_task(custom_activity())
+    if activity_running == False:
+        activity_running = True
+        bot.loop.create_task(custom_activity())
+        
 
 
 @bot.event
