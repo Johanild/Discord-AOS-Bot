@@ -132,7 +132,14 @@ async def on_ready():
     if activity_running == False:
         activity_running = True
         bot.loop.create_task(custom_activity())
-        
+
+
+@bot.event
+async def on_error(event, *args, **kwargs):
+    if isinstance(args[0], discord.HTTPException) and args[0].status == 429:
+        retry_after = args[0].headers.get("Retry-After")
+        if retry_after:
+            await asyncio.sleep(int(retry_after) + 1)
 
 
 @bot.event
