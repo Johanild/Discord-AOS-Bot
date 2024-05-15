@@ -140,6 +140,7 @@ async def on_error(event, *args, **kwargs):
         retry_after = args[0].headers.get("Retry-After")
         if retry_after:
             await asyncio.sleep(int(retry_after) + 1)
+            print(args[0])
 
 
 @bot.event
